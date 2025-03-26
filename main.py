@@ -11,8 +11,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
-from torch import distributed as dist
-from apex import amp
+# from torch import distributed as dist
+# from apex import amp
 
 from configs.default_img import get_img_config
 from configs.default_vid import get_vid_config
