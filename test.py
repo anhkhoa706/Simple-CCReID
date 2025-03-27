@@ -18,9 +18,13 @@ def concat_all_gather(tensors, num_total_examples):
     outputs = []
     for tensor in tensors:
         tensor = tensor.cuda()
-        tensors_gather = [tensor.clone() for _ in range(dist.get_world_size())]
-        dist.all_gather(tensors_gather, tensor)
-        output = torch.cat(tensors_gather, dim=0).cpu()
+        if dist.is_available() and dist.is_initialized():
+            world_size = dist.get_world_size()
+            tensors_gather = [tensor.clone() for _ in range(world_size)]
+            dist.all_gather(tensors_gather, tensor)
+            output = torch.cat(tensors_gather, dim=0)
+        else:
+            output = tensor  # single GPU training
         # truncate the dummy elements added by DistributedInferenceSampler
         outputs.append(output[:num_total_examples])
     return outputs
@@ -87,7 +91,7 @@ def test(config, model, queryloader, galleryloader, dataset):
     logger = logging.getLogger('reid.test')
     since = time.time()
     model.eval()
-    local_rank = dist.get_rank()
+    local_rank = 0
     # Extract features 
     if config.DATA.DATASET in VID_DATASET:
         qf, q_pids, q_camids, q_clothes_ids = extract_vid_feature(model, queryloader, 
@@ -153,7 +157,7 @@ def test_prcc(model, queryloader_same, queryloader_diff, galleryloader, dataset)
     logger = logging.getLogger('reid.test')
     since = time.time()
     model.eval()
-    local_rank = dist.get_rank()
+    local_rank = 0
     # Extract features for query set
     qsf, qs_pids, qs_camids, qs_clothes_ids = extract_img_feature(model, queryloader_same)
     qdf, qd_pids, qd_camids, qd_clothes_ids = extract_img_feature(model, queryloader_diff)
@@ -182,9 +186,22 @@ def test_prcc(model, queryloader_same, queryloader_diff, galleryloader, dataset)
         distmat_diff[i] = (- torch.mm(qdf[i:i+1], gf.t())).cpu()
     distmat_same = distmat_same.numpy()
     distmat_diff = distmat_diff.numpy()
-    qs_pids, qs_camids, qs_clothes_ids = qs_pids.numpy(), qs_camids.numpy(), qs_clothes_ids.numpy()
-    qd_pids, qd_camids, qd_clothes_ids = qd_pids.numpy(), qd_camids.numpy(), qd_clothes_ids.numpy()
-    g_pids, g_camids, g_clothes_ids = g_pids.numpy(), g_camids.numpy(), g_clothes_ids.numpy()
+    # qs_pids, qs_camids, qs_clothes_ids = qs_pids.numpy(), qs_camids.numpy(), qs_clothes_ids.numpy()
+    # qd_pids, qd_camids, qd_clothes_ids = qd_pids.numpy(), qd_camids.numpy(), qd_clothes_ids.numpy()
+    # g_pids, g_camids, g_clothes_ids = g_pids.numpy(), g_camids.numpy(), g_clothes_ids.numpy()
+
+    qs_pids = qs_pids.cpu().numpy()
+    qs_camids = qs_camids.cpu().numpy()
+    qs_clothes_ids = qs_clothes_ids.cpu().numpy()
+
+    qd_pids = qd_pids.cpu().numpy()
+    qd_camids = qd_camids.cpu().numpy()
+    qd_clothes_ids = qd_clothes_ids.cpu().numpy()
+
+    g_pids = g_pids.cpu().numpy()
+    g_camids = g_camids.cpu().numpy()
+    g_clothes_ids = g_clothes_ids.cpu().numpy()
+
 
     logger.info("Computing CMC and mAP for the same clothes setting")
     cmc, mAP = evaluate(distmat_same, qs_pids, g_pids, qs_camids, g_camids)

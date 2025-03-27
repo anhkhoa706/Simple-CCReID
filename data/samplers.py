@@ -87,7 +87,7 @@ class DistributedRandomIdentitySampler(Sampler):
         if rank is None:
             if not dist.is_available():
                 raise RuntimeError("Requires distributed package to be available")
-            rank = dist.get_rank()
+            rank = 0
         if rank >= num_replicas or rank < 0:
             raise ValueError(
                 "Invalid rank {}, rank should be in the interval"
@@ -189,7 +189,7 @@ class DistributedInferenceSampler(Sampler):
         if rank is None:
             if not dist.is_available():
                 raise RuntimeError("Requires distributed package to be available")
-            rank = dist.get_rank()
+            rank = 0
         self.dataset = dataset
         self.num_replicas = num_replicas
         self.rank = rank

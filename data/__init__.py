@@ -1,7 +1,7 @@
 import data.img_transforms as T
 import data.spatial_transforms as ST
 import data.temporal_transforms as TT
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, RandomSampler
 from data.dataloader import DataLoaderX
 from data.dataset_loader import ImageDataset, VideoDataset
 from data.samplers import DistributedRandomIdentitySampler, DistributedInferenceSampler
@@ -134,33 +134,35 @@ def build_dataloader(config):
     # image dataset
     else:
         transform_train, transform_test = build_img_transforms(config)
-        train_sampler = DistributedRandomIdentitySampler(dataset.train, 
-                                                         num_instances=config.DATA.NUM_INSTANCES, 
-                                                         seed=config.SEED)
+        # train_sampler = DistributedRandomIdentitySampler(dataset.train, 
+        #                                                  num_instances=config.DATA.NUM_INSTANCES, 
+        #                                                  seed=config.SEED)
+        # Command due to one GPU
+        train_sampler = None
         trainloader = DataLoaderX(dataset=ImageDataset(dataset.train, transform=transform_train),
                                  sampler=train_sampler,
                                  batch_size=config.DATA.TRAIN_BATCH, num_workers=config.DATA.NUM_WORKERS,
-                                 pin_memory=True, drop_last=True)
+                                 pin_memory=True, drop_last=True, shuffle=True)
 
         galleryloader = DataLoaderX(dataset=ImageDataset(dataset.gallery, transform=transform_test),
-                                   sampler=DistributedInferenceSampler(dataset.gallery),
+                                   sampler=None,
                                    batch_size=config.DATA.TEST_BATCH, num_workers=config.DATA.NUM_WORKERS,
                                    pin_memory=True, drop_last=False, shuffle=False)
 
         if config.DATA.DATASET == 'prcc':
             queryloader_same = DataLoaderX(dataset=ImageDataset(dataset.query_same, transform=transform_test),
-                                     sampler=DistributedInferenceSampler(dataset.query_same),
+                                     sampler=None,
                                      batch_size=config.DATA.TEST_BATCH, num_workers=config.DATA.NUM_WORKERS,
                                      pin_memory=True, drop_last=False, shuffle=False)
             queryloader_diff = DataLoaderX(dataset=ImageDataset(dataset.query_diff, transform=transform_test),
-                                     sampler=DistributedInferenceSampler(dataset.query_diff),
+                                     sampler=None,
                                      batch_size=config.DATA.TEST_BATCH, num_workers=config.DATA.NUM_WORKERS,
                                      pin_memory=True, drop_last=False, shuffle=False)
 
             return trainloader, queryloader_same, queryloader_diff, galleryloader, dataset, train_sampler
         else:
             queryloader = DataLoaderX(dataset=ImageDataset(dataset.query, transform=transform_test),
-                                     sampler=DistributedInferenceSampler(dataset.query),
+                                     sampler=None,
                                      batch_size=config.DATA.TEST_BATCH, num_workers=config.DATA.NUM_WORKERS,
                                      pin_memory=True, drop_last=False, shuffle=False)
 

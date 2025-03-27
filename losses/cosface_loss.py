@@ -70,7 +70,7 @@ class PairwiseCosFaceLoss(nn.Module):
         targets, gallery_targets = targets.view(-1, 1), gallery_targets.view(-1, 1)
         mask = torch.eq(targets, gallery_targets.T).float().cuda()
         mask_self = torch.zeros_like(mask)
-        rank = dist.get_rank()
+        rank = 0
         mask_self[:, rank * m:(rank + 1) * m] += torch.eye(m).float().cuda()
         mask_pos = mask - mask_self
         mask_neg = 1 - mask

@@ -8,10 +8,14 @@ class GatherLayer(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input):
         ctx.save_for_backward(input)
-        output = [torch.zeros_like(input) for _ in range(dist.get_world_size())]
-        dist.all_gather(output, input)
-
-        return tuple(output)
+        if dist.is_available() and dist.is_initialized():
+            world_size = dist.get_world_size()
+            output = [torch.zeros_like(input) for _ in range(world_size)]
+            dist.all_gather(output, input)
+            return tuple(output)
+        else:
+            # Single GPU fallback
+            return (input,)
 
     @staticmethod
     def backward(ctx, *grads):
@@ -21,6 +25,6 @@ class GatherLayer(torch.autograd.Function):
         # dist.reduce_scatter(grad_out, list(grads))
         # grad_out.div_(dist.get_world_size())
 
-        grad_out[:] = grads[dist.get_rank()]
+        grad_out[:] = grads[0]
 
         return grad_out

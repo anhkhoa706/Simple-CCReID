@@ -25,6 +25,8 @@ def train_cal(config, epoch, model, classifier, clothes_classifier, criterion_cl
     end = time.time()
     for batch_idx, (imgs, pids, camids, clothes_ids) in enumerate(trainloader):
         # Get all positive clothes classes (belonging to the same identity) for each sample
+        device = torch.device("cuda")
+        pid2clothes = pid2clothes.to(device)
         pos_mask = pid2clothes[pids]
         imgs, pids, clothes_ids, pos_mask = imgs.cuda(), pids.cuda(), clothes_ids.cuda(), pos_mask.float().cuda()
         # Measure data loading time
