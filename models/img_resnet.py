@@ -1,6 +1,7 @@
 import torchvision
 from torch import nn
 from torch.nn import init
+from torchvision.models import ResNet50_Weights
 from models.utils import pooling
         
 
@@ -8,7 +9,7 @@ class ResNet50(nn.Module):
     def __init__(self, config, **kwargs):
         super().__init__()
 
-        resnet50 = torchvision.models.resnet50(pretrained=True)
+        resnet50 = torchvision.models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
         if config.MODEL.RES4_STRIDE == 1:
             resnet50.layer4[0].conv2.stride=(1, 1)
             resnet50.layer4[0].downsample[0].stride=(1, 1) 
