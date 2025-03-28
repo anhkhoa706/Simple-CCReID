@@ -43,6 +43,22 @@ def parse_option():
 
     return config
 
+def analyze_pid2clothes(pid2clothes):
+    num_ids, num_clothes = pid2clothes.shape
+    print(f"pid2clothes shape: {pid2clothes.shape}")
+    
+    clothes_per_id = pid2clothes.sum(dim=1)
+    ids_with_1_cloth = (clothes_per_id == 1).sum().item()
+    ids_with_2_or_more = (clothes_per_id >= 2).sum().item()
+    
+    print(f"- Total identities: {num_ids}")
+    print(f"- Total clothes   : {num_clothes}")
+    print(f"- IDs with 1 cloth: {ids_with_1_cloth}")
+    print(f"- IDs with ≥2     : {ids_with_2_or_more}")
+    print(f"- Min clothes/id  : {clothes_per_id.min().item()}")
+    print(f"- Max clothes/id  : {clothes_per_id.max().item()}")
+    print(f"- Avg clothes/id  : {clothes_per_id.float().mean().item():.2f}")
+
 def main(config):
     if config.DATA.DATASET == 'prcc':
         trainloader, queryloader_same, queryloader_diff, galleryloader, dataset, train_sampler = build_dataloader(config)
@@ -72,7 +88,7 @@ def main(config):
     start_epoch = config.TRAIN.START_EPOCH
     if config.MODEL.RESUME:
         logger.info("Loading checkpoint from '{}'".format(config.MODEL.RESUME))
-        checkpoint = torch.load(config.MODEL.RESUME)
+        checkpoint = torch.load(config.MODEL.RESUME, weights_only=False)
         model.load_state_dict(checkpoint['model_state_dict'])
         classifier.load_state_dict(checkpoint['classifier_state_dict'])
         if config.LOSS.CAL == 'calwithmemory':
@@ -97,7 +113,10 @@ def main(config):
             else:
                 test(config, model, queryloader, galleryloader, dataset)
         return
-
+    
+    # Tets pid2clothes before training
+    analyze_pid2clothes(pid2clothes)
+    
     start_time = time.time()
     train_time = 0
     best_rank1 = -np.inf
@@ -148,7 +167,21 @@ if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = config.GPU
     set_seed(config.SEED)
 
-    output_file = osp.join(config.OUTPUT, 'log_test.log' if config.EVAL_MODE else 'log_train.log')
+    # Generate timestamp
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Create new run subfolder
+    run_output_dir = osp.join(config.OUTPUT, timestamp)
+    os.makedirs(run_output_dir, exist_ok=True)
+
+    # Allow modifying the config
+    config.defrost()
+    config.OUTPUT = run_output_dir
+    config.freeze()  # Optional: freeze again after setting
+
+    # Setup logger
+    log_type = 'test' if config.EVAL_MODE else 'train'
+    output_file = osp.join(run_output_dir, f'log_{log_type}_{timestamp}.log')
     logger = get_logger(output_file, 0, 'reid')
     logger.info("Config:\n-----------------------------------------")
     logger.info(config)
