@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
+from apex import amp
 
 from configs.default_img import get_img_config
 from configs.default_vid import get_vid_config
@@ -104,6 +105,13 @@ def main(config):
         criterion_adv = criterion_adv.to(device)
     else:
         clothes_classifier = clothes_classifier.to(device)
+
+    if config.TRAIN.AMP:
+        print("Using automatic mixed precision (AMP) for training")
+        [model, classifier], optimizer = amp.initialize([model, classifier], optimizer, opt_level="O1")
+        if config.LOSS.CAL != 'calwithmemory':
+            clothes_classifier, optimizer_cc = amp.initialize(clothes_classifier, optimizer_cc, opt_level="O1")
+        scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=config.TRAIN.LR_SCHEDULER.STEPSIZE, gamma=config.TRAIN.LR_SCHEDULER.DECAY_RATE)
 
     if config.EVAL_MODE:
         logger.info("Evaluate only")
