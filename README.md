@@ -8,7 +8,7 @@
 - Fully compatible with **single-GPU** setups 
 - Removed all **torch.distributed** dependencies 
 - Removed **apex** (AMP) requirement 
-- Refactored `main.py` to `main_one_gpu.py` for clarity
+- Refactored `main.py` to `main_single_gpu.py` for clarity
 - Simplified dataloaders and samplers for easier training/testing
 
 ---
@@ -51,7 +51,7 @@ You can also use LTCC, PRCC, VC-Clothes, or DeepChange datasets (configurable).
 
 3. Run training (single GPU):
     ```bash
-    python main_one_gpu.py --cfg configs/res50_cels_cal.yaml --dataset prcc --gpu 0
+    python main_single_gpu.py --cfg configs/res50_cels_cal.yaml --dataset prcc --gpu 0
     ```
 
 ---
@@ -60,7 +60,7 @@ You can also use LTCC, PRCC, VC-Clothes, or DeepChange datasets (configurable).
 Model will automatically evaluate every few epochs and print Rank-1 accuracy and other metrics. To run evaluation only:
 
 ```bash
-python main_one_gpu.py --cfg configs/res50_cels_cal.yaml --dataset prcc --gpu 0 --eval
+python main_single_gpu.py --cfg configs/res50_cels_cal.yaml --dataset prcc --gpu 0 --eval
 ```
 
 ---

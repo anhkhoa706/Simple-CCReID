@@ -9,7 +9,7 @@ _C = CN()
 # -----------------------------------------------------------------------------
 _C.DATA = CN()
 # Root path for dataset directory
-_C.DATA.ROOT = '/home/wins057/Documents/Projects/ReID/Dataset'
+_C.DATA.ROOT = '/home/wins057/Documents/Projects/ReID/CC-ReID/Image/Dataset'
 # Dataset for evaluation
 _C.DATA.DATASET = 'prcc'
 # Workers for dataloader
